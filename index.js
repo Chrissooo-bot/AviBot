@@ -325,19 +325,41 @@ bot.onText(/\/activer (.+)/, async (msg, match) => {
   if (!isAdmin(msg.from.id)) return bot.sendMessage(msg.chat.id, '❌ Non autorisé.');
   const parts = match[1].trim().split(/\s+/);
   const usernameRaw = parts[0].replace('@', '').toLowerCase();
+  const dureeArg = parts[1] ? parts[1].toLowerCase() : 'mois';
 
   const target = await dbGet('SELECT * FROM users WHERE LOWER(username) = ?', [usernameRaw]);
-  if (!target) return bot.sendMessage(msg.chat.id, `❌ @${usernameRaw} introuvable.\nIl doit d'abord taper /start.`);
+  if (!target) return bot.sendMessage(msg.chat.id,
+    `❌ @${usernameRaw} introuvable.\nIl doit d'abord taper /start.\n\n💡 Usage :\n/activer @username 1j\n/activer @username 3j\n/activer @username mois`
+  );
 
-  // Calcul de la fin du mois en cours (minuit dernier jour du mois)
-  const now = new Date();
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const expiresAt = Math.floor(lastDayOfMonth.getTime() / 1000);
-  const daysCount = Math.ceil((expiresAt - Math.floor(now.getTime() / 1000)) / 86400);
-
-  // Noms des mois en français
   const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  const moisNom = MOIS[now.getMonth()];
+  const now = new Date();
+  let expiresAt, label, daysCount;
+
+  if (dureeArg === 'mois') {
+    // Fin du mois en cours
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    expiresAt = Math.floor(lastDay.getTime() / 1000);
+    daysCount = Math.ceil((expiresAt - Math.floor(now.getTime() / 1000)) / 86400);
+    label = `*${MOIS[now.getMonth()]}* (${daysCount} jours)`;
+  } else if (dureeArg === '1j') {
+    expiresAt = Math.floor(now.getTime() / 1000) + 86400;
+    daysCount = 1;
+    label = '*1 jour*';
+  } else if (dureeArg === '3j') {
+    expiresAt = Math.floor(now.getTime() / 1000) + 3 * 86400;
+    daysCount = 3;
+    label = '*3 jours*';
+  } else if (/^\d+j$/.test(dureeArg)) {
+    // Format Nj — ex: 7j, 15j
+    daysCount = parseInt(dureeArg);
+    expiresAt = Math.floor(now.getTime() / 1000) + daysCount * 86400;
+    label = `*${daysCount} jours*`;
+  } else {
+    return bot.sendMessage(msg.chat.id,
+      `❌ Durée invalide.\n\n💡 Usage :\n/activer @username 1j\n/activer @username 3j\n/activer @username 7j\n/activer @username mois`
+    );
+  }
 
   await dbRun('UPDATE users SET subscribed_until = ? WHERE telegram_id = ?', [expiresAt, target.telegram_id]);
   await dbRun('INSERT INTO payments (telegram_id, username, amount, activated_by, expires_at) VALUES (?,?,?,?,?)',
@@ -345,13 +367,13 @@ bot.onText(/\/activer (.+)/, async (msg, match) => {
 
   // Notif admin
   bot.sendMessage(msg.chat.id,
-    `✅ @${usernameRaw} activé pour *${moisNom}*\n📅 Expire le : ${formatDate(expiresAt)} (${daysCount} jours restants)`,
+    `✅ @${usernameRaw} activé pour ${label}\n📅 Expire le : ${formatDate(expiresAt)}`,
     { parse_mode: 'Markdown' }
   );
 
-  // Notif client avec bouton Mini App
+  // Notif client
   bot.sendMessage(target.telegram_id,
-    `🎉 *Abonnement activé !*\n\n✅ Accès débloqué pour *${moisNom}*\n📅 Expire le : ${formatDate(expiresAt)}\n⏳ ${daysCount} jours restants\n\nTape /app pour lancer la Mini App !`,
+    `🎉 *Abonnement activé !*\n\n✅ Accès débloqué pour ${label}\n📅 Expire le : ${formatDate(expiresAt)}\n\nTape /app pour lancer la Mini App !`,
     {
       parse_mode: 'Markdown',
       reply_markup: {
