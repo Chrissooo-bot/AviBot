@@ -327,9 +327,14 @@ bot.onText(/\/activer (.+)/, async (msg, match) => {
   const usernameRaw = parts[0].replace('@', '').toLowerCase();
   const dureeArg = parts[1] ? parts[1].toLowerCase() : 'mois';
 
-  const target = await dbGet('SELECT * FROM users WHERE LOWER(username) = ?', [usernameRaw]);
+  // Cherche par username OU par ID numérique
+  const isNumericId = /^\d+$/.test(usernameRaw);
+  const target = isNumericId
+    ? await dbGet('SELECT * FROM users WHERE telegram_id = ?', [parseInt(usernameRaw)])
+    : await dbGet('SELECT * FROM users WHERE LOWER(username) = ?', [usernameRaw]);
+
   if (!target) return bot.sendMessage(msg.chat.id,
-    `❌ @${usernameRaw} introuvable.\nIl doit d'abord taper /start.\n\n💡 Usage :\n/activer @username 1j\n/activer @username 3j\n/activer @username mois`
+    `❌ Utilisateur introuvable.\nIl doit d'abord taper /start dans le bot.\n\n💡 Usage :\n/activer @username 1j\n/activer @username 3j\n/activer @username mois\n/activer 123456789 mois (par ID)`
   );
 
   const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
