@@ -209,6 +209,8 @@ ${sub
 
 📋 *Commandes :*
 /app — 📱 Ouvrir la Mini App
+/coef — Ajouter des coefficients
+/predict — Obtenir une prédiction
 /historique — Voir l'historique
 /reset — Remettre à zéro
 /statut — Voir ton abonnement
@@ -238,7 +240,7 @@ bot.onText(/\/abonnement/, async (msg) => {
 
 2️⃣ Fais une capture d'écran du reçu
 
-3️⃣ Envoie le screenshot à @Chriisssoooo_k
+3️⃣ Envoie le screenshot ici directement
 
 4️⃣ Attends la confirmation ⏳
 
@@ -394,13 +396,26 @@ bot.on('photo', async (msg) => {
   await upsertUser(msg);
   const user = await getUser(msg.from.id);
   if (isSubscribed(user)) return bot.sendMessage(msg.chat.id, '✅ Ton abonnement est déjà actif !');
+
   const name = msg.from.first_name || 'Inconnu';
   const username = msg.from.username ? `@${msg.from.username}` : `ID: ${msg.from.id}`;
+  const activerCmd = msg.from.username ? `/activer ${msg.from.username}` : `/activer ${msg.from.id}`;
+  const fileId = msg.photo[msg.photo.length - 1].file_id;
+  const caption = `💳 *Nouveau paiement à valider*\n\n👤 ${name} (${username})\n🆔 ID: \`${msg.from.id}\`\n\nPour activer :\n\`${activerCmd}\``;
+
   try {
-    await bot.sendMessage(ADMIN_ID, `💳 *Nouveau paiement à valider*\n\n👤 ${name} (${username})\n🆔 ID: ${msg.from.id}\n\nPour activer :\n\`/activer ${msg.from.username || msg.from.id} 30\``, { parse_mode: 'Markdown' });
-    await bot.forwardMessage(ADMIN_ID, msg.chat.id, msg.message_id);
+    await bot.sendPhoto(ADMIN_ID, fileId, { caption, parse_mode: 'Markdown' });
     bot.sendMessage(msg.chat.id, '✅ *Screenshot reçu !*\n\nVérification en cours... Tu recevras une confirmation dans quelques minutes. ⏳', { parse_mode: 'Markdown' });
-  } catch { bot.sendMessage(msg.chat.id, '❌ Erreur. Réessaie.'); }
+  } catch (err) {
+    console.error('Erreur envoi photo admin:', err.message);
+    try {
+      await bot.sendMessage(ADMIN_ID, caption + '\n\n⚠️ Photo non transmise — demande au client de renvoyer.', { parse_mode: 'Markdown' });
+      bot.sendMessage(msg.chat.id, '✅ *Screenshot reçu !*\n\nVérification en cours... ⏳', { parse_mode: 'Markdown' });
+    } catch (err2) {
+      console.error('Erreur fallback:', err2.message);
+      bot.sendMessage(msg.chat.id, '❌ Erreur technique. Contacte l admin directement.');
+    }
+  }
 });
 
 // ============ RAPPELS EXPIRATION ============
