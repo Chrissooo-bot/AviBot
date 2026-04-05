@@ -380,3 +380,14 @@ setInterval(async () => {
 }, 3600 * 1000);
 
 console.log('✈️ AviatorBot démarré !');
+
+bot.onText(/\/app/, (msg) => {
+  bot.sendMessage(msg.chat.id, '✈️ Ouvre AviatorBot', {
+    reply_markup: {
+      inline_keyboard: [[{
+        text: '🚀 Lancer AviatorBot',
+        web_app: { url: 'https://avibot-2je1.onrender.com/webapp.html' }
+      }]]
+    }
+  });
+});
