@@ -209,8 +209,6 @@ ${sub
 
 📋 *Commandes :*
 /app — 📱 Ouvrir la Mini App
-/coef — Ajouter des coefficients
-/predict — Obtenir une prédiction
 /historique — Voir l'historique
 /reset — Remettre à zéro
 /statut — Voir ton abonnement
@@ -240,7 +238,7 @@ bot.onText(/\/abonnement/, async (msg) => {
 
 2️⃣ Fais une capture d'écran du reçu
 
-3️⃣ Envoie le screenshot ici directement
+3️⃣ Envoie le screenshot à @Chriisssoooo_k
 
 4️⃣ Attends la confirmation ⏳
 
