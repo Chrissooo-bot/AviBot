@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AviatorBot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #02040a;
+  --s1: #080f1c;
+  --s2: #0d1626;
+  --s3: #111e33;
+  --border: #162035;
+  --accent: #ff4d6d;
+  --accent2: #ff8c42;
+  --blue: #4d9fff;
+  --green: #2dff8f;
+  --yellow: #ffe234;
+  --text: #dce8ff;
+  --muted: #3a5070;
+  --muted2: #5a7090;
+  --ag: linear-gradient(135deg, #ff4d6d, #ff8c42);
+  --gg: linear-gradient(135deg, #2dff8f, #00d4ff);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(77,159,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,159,255,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ===== HEADER ===== */
+header {
+  position: sticky;
+  top:0;
+  z-index:100;
+  background: rgba(8,15,28,0.97);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 52px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 4px;
+  background: var(--ag);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header-right { display:flex; align-items:center; gap:10px; }
+.live-badge {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background: rgba(255,77,109,0.1);
+  border: 1px solid rgba(255,77,109,0.3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-family: 'DM Mono', monospace;
+}
+.live-dot {
+  width:5px; height:5px;
+  border-radius:50%;
+  background: var(--accent);
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity:0; } }
+.help-btn {
+  background: rgba(255,77,109,0.12);
+  border: 1px solid rgba(255,77,109,0.35);
+  color: var(--accent);
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 52px;
+  z-index: 99;
+}
+.tab {
+  flex: 1;
+  padding: 10px 4px;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: rgba(255,77,109,0.05);
+}
+
+/* ===== PAGES ===== */
+.page { display:none; padding: 14px; position:relative; z-index:1; }
+.page.active { display:block; }
+
+/* ===== CARD ===== */
+.card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  position:relative;
+  overflow:hidden;
+  margin-bottom: 12px;
+}
+.card::after {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,77,109,0.4) 50%, transparent 100%);
+}
+.section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+/* ===== PLANE ZONE ===== */
+.plane-zone {
+  height: 150px;
+  background: var(--s2);
+  border-radius: 10px;
+  position:relative;
+  overflow:hidden;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+.plane-bg {
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(255,77,109,0.07), transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(77,159,255,0.06), transparent 60%);
+}
+.traj-line {
+  position:absolute;
+  bottom:28px; left:0;
+  width:0%; height:2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2));
+  transition: width 0.05s linear;
+  border-radius:2px;
+  box-shadow: 0 0 8px var(--accent);
+}
+.plane {
+  position:absolute;
+  font-size:1.8rem;
+  transition: left 0.05s linear, bottom 0.05s linear;
+  filter: drop-shadow(0 0 10px rgba(255,77,109,0.8));
+  transform: rotate(-20deg);
+}
+.mult-display {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3.5rem;
+  letter-spacing: 4px;
+  background: var(--ag);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.prediction-tag {
+  position:absolute;
+  top:10px; right:10px;
+  background: rgba(45,255,143,0.1);
+  border: 1px solid rgba(45,255,143,0.4);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+
+/* ===== INPUT ===== */
+.inp-group { margin-bottom: 10px; }
+.inp-group label {
+  display:block;
+  font-size:0.63rem;
+  color:var(--muted2);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  margin-bottom:5px;
+  font-family:'DM Mono',monospace;
+}
+input[type=number], input[type=text] {
+  width:100%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+input:focus { border-color: var(--accent); }
+
+.input-row { display:flex; gap:8px; margin-bottom:10px; }
+.input-row .inp-group { flex:1; margin-bottom:0; }
+
+/* QUICK BUTTONS */
+.quick-row {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.qbtn {
+  padding:6px 12px;
+  border-radius:6px;
+  font-family:'DM Mono',monospace;
+  font-size:0.7rem;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--s2);
+  color:var(--muted2);
+  transition:all 0.15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.qbtn:active { background:rgba(255,77,109,0.15); border-color:var(--accent); color:var(--accent); }
+
+/* ===== HISTORY TAPE ===== */
+.history-tape {
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  min-height:40px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius:8px;
+  padding:8px;
+  margin-bottom:12px;
+}
+.coef-pill {
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  font-weight:500;
+  animation: popIn 0.2s ease;
+}
+@keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+.pill-low  { background:rgba(255,77,109,0.15); color:var(--accent); border:1px solid rgba(255,77,109,0.3); }
+.pill-mid  { background:rgba(255,226,52,0.12); color:var(--yellow); border:1px solid rgba(255,226,52,0.25); }
+.pill-high { background:rgba(45,255,143,0.12); color:var(--green);  border:1px solid rgba(45,255,143,0.25); }
+.pill-moon { background:rgba(77,159,255,0.15); color:var(--blue);   border:1px solid rgba(77,159,255,0.3); }
+
+/* ===== BUTTONS ===== */
+.btn-row { display:flex; gap:8px; }
+.btn {
+  flex:1;
+  padding: 12px 10px;
+  border:none;
+  border-radius:8px;
+  font-family:'DM Mono',monospace;
+  font-size:0.65rem;
+  font-weight:500;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-fire { background:var(--ag); color:#000; box-shadow:0 4px 16px rgba(255,77,109,0.3); }
+.btn-fire:active { transform:scale(0.97); }
+.btn-add { background:rgba(45,255,143,0.1); border:1px solid rgba(45,255,143,0.35); color:var(--green); }
+.btn-add:active { background:rgba(45,255,143,0.2); }
+.btn-ghost { background:var(--s2); border:1px solid var(--border); color:var(--muted2); }
+.btn-ghost:active { border-color:var(--muted2); color:var(--text); }
+
+/* ===== PREDICTION CARD ===== */
+.pred-main {
+  background: var(--s2);
+  border-radius:10px;
+  padding:16px;
+  margin-bottom:12px;
+  border:1px solid var(--border);
+  position:relative;
+  overflow:hidden;
+}
+.pred-main::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse at top left, rgba(255,77,109,0.06), transparent 60%);
+}
+.pred-label { font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:3px; color:var(--muted2); text-transform:uppercase; margin-bottom:6px; }
+.pred-value {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:3.5rem;
+  letter-spacing:3px;
+  line-height:1;
+  background: var(--ag);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.pred-value.green-pred { background:var(--gg); -webkit-background-clip:text; background-clip:text; }
+.pred-confidence { margin-top:10px; height:5px; background:var(--s3); border-radius:3px; overflow:hidden; }
+.pred-conf-fill { height:100%; border-radius:3px; background:var(--ag); transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.pred-conf-label { display:flex; justify-content:space-between; margin-top:5px; font-size:0.68rem; color:var(--muted2); font-family:'DM Mono',monospace; }
+
+/* SIGNAL */
+.signal-zone {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background: var(--s2);
+  border-radius:8px;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  margin-bottom:12px;
+}
+.signal-icon { font-size:1.4rem; flex-shrink:0; }
+.signal-title { font-size:0.6rem; font-family:'DM Mono',monospace; letter-spacing:2px; color:var(--muted2); text-transform:uppercase; }
+.signal-text { font-size:0.85rem; font-weight:600; margin-top:2px; color:var(--text); }
+.signal-text.go { color:var(--green); }
+.signal-text.wait { color:var(--yellow); }
+.signal-text.danger { color:var(--accent); }
+
+/* CASHOUT */
+.cashout-rec {
+  background:linear-gradient(135deg,rgba(255,226,52,0.08),rgba(255,140,66,0.08));
+  border:1px solid rgba(255,226,52,0.3);
+  border-radius:10px;
+  padding:14px;
+  text-align:center;
+  margin-bottom:12px;
+  animation:cashGlow 2s ease-in-out infinite;
+  display:none;
+}
+@keyframes cashGlow {
+  0%,100%{box-shadow:0 0 10px rgba(255,226,52,0.1);}
+  50%{box-shadow:0 0 25px rgba(255,226,52,0.3);}
+}
+.cashout-rec.show { display:block; }
+.cash-lbl { font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:3px; color:var(--yellow); margin-bottom:4px; }
+.cash-val { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; color:var(--yellow); letter-spacing:3px; }
+.cash-sub { font-size:0.7rem; color:var(--muted2); margin-top:3px; }
+
+/* CHANCES */
+.chances-counter { display:flex; align-items:center; gap:6px; margin-top:10px; }
+.cc-dot { width:10px; height:10px; border-radius:50%; border:2px solid; transition:all 0.3s; }
+.cc-dot.used { opacity:0.2; }
+.cc-dot.active { transform:scale(1.3); }
+.cc-dot-1 { border-color:var(--green); background:var(--green); }
+.cc-dot-2 { border-color:var(--yellow); background:var(--yellow); }
+.cc-dot-3 { border-color:var(--accent); background:var(--accent); }
+.cc-label { font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted2); margin-left:4px; }
+#chanceInfo { display:none; font-family:'DM Mono',monospace; font-size:0.63rem; color:var(--muted2); margin-top:6px; line-height:1.5; padding:6px 8px; background:var(--s3); border-radius:6px; }
+
+/* STREAK */
+.streak-row { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px; }
+.streak-dot { width:22px; height:22px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:0.58rem; font-family:'DM Mono',monospace; }
+.sd-high { background:rgba(45,255,143,0.15); color:var(--green); border:1px solid rgba(45,255,143,0.3); }
+.sd-low  { background:rgba(255,77,109,0.15); color:var(--accent); border:1px solid rgba(255,77,109,0.3); }
+
+/* STRAT PILLS */
+.strat-pills { display:flex; gap:6px; flex-wrap:wrap; }
+.spill {
+  padding:6px 12px;
+  border-radius:20px;
+  font-family:'DM Mono',monospace;
+  font-size:0.65rem;
+  letter-spacing:1px;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--s2);
+  color:var(--muted2);
+  transition:all 0.15s;
+}
+.spill.active { background:rgba(255,77,109,0.1); border-color:var(--accent); color:var(--accent); }
+
+/* STATS GRID */
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.stat-box { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:12px 10px; text-align:center; }
+.stat-val { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:2px; display:block; line-height:1; }
+.stat-lbl { font-family:'DM Mono',monospace; font-size:0.56rem; color:var(--muted2); letter-spacing:1.5px; text-transform:uppercase; margin-top:3px; }
+.c-red { color:var(--accent); } .c-green { color:var(--green); } .c-blue { color:var(--blue); } .c-yellow { color:var(--yellow); }
+
+/* DISTRIBUTION */
+.bar-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.bar-label { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted2); width:56px; flex-shrink:0; }
+.bar-track { flex:1; height:7px; background:var(--s3); border-radius:4px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; transition:width 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+.bar-count { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted2); width:24px; text-align:right; }
+
+/* TREND */
+canvas { width:100% !important; }
+
+/* DISCLAIMER */
+.disclaimer { font-family:'DM Mono',monospace; font-size:0.58rem; color:var(--muted); text-align:center; padding:12px; border-top:1px solid var(--border); line-height:1.6; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position:fixed; inset:0;
+  background:rgba(2,4,10,0.88);
+  backdrop-filter:blur(8px);
+  z-index:999;
+  display:flex; align-items:flex-end;
+  animation:fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-overlay.hidden { display:none; }
+.modal {
+  background:var(--s1);
+  border:1px solid rgba(255,77,109,0.3);
+  border-radius:20px 20px 0 0;
+  width:100%;
+  max-height:85vh;
+  overflow-y:auto;
+  animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 -20px 60px rgba(255,77,109,0.15);
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:12px auto 0; }
+.modal-header { padding:16px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-title { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; letter-spacing:4px; background:var(--ag); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.modal-close { background:var(--s2); border:1px solid var(--border); color:var(--muted2); width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:0.9rem; display:flex; align-items:center; justify-content:center; }
+.modal-body { padding:16px 20px 32px; }
+.step { display:flex; gap:12px; margin-bottom:16px; align-items:flex-start; }
+.step-num { font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:2px; background:var(--ag); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; flex-shrink:0; width:24px; text-align:center; line-height:1.2; }
+.step-title { font-family:'Bebas Neue',sans-serif; font-size:0.88rem; letter-spacing:2px; color:var(--text); margin-bottom:3px; }
+.step-desc { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted2); line-height:1.6; }
+.step-desc b { color:var(--accent); }
+.chances-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+.chance-item { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; }
+.chance-num { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; letter-spacing:2px; display:block; line-height:1; }
+.chance-num.c1 { color:var(--green); } .chance-num.c2 { color:var(--yellow); } .chance-num.c3 { color:var(--accent); }
+.chance-lbl { font-family:'DM Mono',monospace; font-size:0.56rem; color:var(--muted2); letter-spacing:1px; margin-top:4px; text-transform:uppercase; }
+.modal-sep { height:1px; background:var(--border); margin:14px 0; }
+.legend-pills { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px; }
+.lpill { padding:4px 10px; border-radius:6px; font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:1px; }
+.lp-low  { background:rgba(255,77,109,0.15); color:var(--accent); border:1px solid rgba(255,77,109,0.3); }
+.lp-mid  { background:rgba(255,226,52,0.12); color:var(--yellow); border:1px solid rgba(255,226,52,0.25); }
+.lp-high { background:rgba(45,255,143,0.12); color:var(--green);  border:1px solid rgba(45,255,143,0.25); }
+.lp-moon { background:rgba(77,159,255,0.15); color:var(--blue);   border:1px solid rgba(77,159,255,0.3); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">AVIATOR BOT</div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <button class="help-btn" onclick="openHelp()">?</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('analyse')">✈️ Analyse</div>
+  <div class="tab" onclick="switchTab('prediction')">🎯 Prédiction</div>
+  <div class="tab" onclick="switchTab('stats')">📊 Stats</div>
+  <div class="tab" onclick="switchTab('mise')">💵 Mise</div>
+</div>
+
+<!-- ===== PAGE: ANALYSE ===== -->
+<div class="page active" id="page-analyse">
+
+  <!-- AVION -->
+  <div class="card">
+    <div class="plane-zone" id="planeZone">
+      <div class="plane-bg"></div>
+      <div class="traj-line" id="trajLine"></div>
+      <div class="plane" id="plane" style="left:5%;bottom:18px;">✈️</div>
+      <div class="mult-display" id="multDisplay">×1.00</div>
+      <div class="prediction-tag" id="predTag">⏳ En attente</div>
+    </div>
+
+    <div class="section-title">📥 Coefficients passés</div>
+    <div class="input-row">
+      <div class="inp-group">
+        <input type="number" id="coefInput" placeholder="ex: 2.30" min="1" step="0.01"
+          onkeydown="if(event.key==='Enter') addCoef()">
+      </div>
+      <button class="btn btn-add" style="flex:0;padding:11px 16px;white-space:nowrap;font-size:0.63rem;" onclick="addCoef()">+ ADD</button>
+    </div>
+
+    <div class="quick-row">
+      <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--muted2);align-self:center;">Rapide:</span>
+      <button class="qbtn" onclick="quickAdd(1.2)">×1.2</button>
+      <button class="qbtn" onclick="quickAdd(1.5)">×1.5</button>
+      <button class="qbtn" onclick="quickAdd(2)">×2</button>
+      <button class="qbtn" onclick="quickAdd(3)">×3</button>
+      <button class="qbtn" onclick="quickAdd(5)">×5</button>
+      <button class="qbtn" onclick="quickAdd(10)">×10</button>
+    </div>
+
+    <div class="section-title">📜 Historique</div>
+    <div class="history-tape" id="histTape">
+      <span style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);align-self:center;">Ajoutez les résultats passés</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-fire" onclick="analyze()">🔍 ANALYSER</button>
+      <button class="btn btn-add" style="flex:0;padding:12px 10px;white-space:nowrap;font-size:0.6rem;" onclick="nextChance()">⟳ CHANCE</button>
+      <button class="btn btn-ghost" onclick="clearAll()">↺</button>
+    </div>
+  </div>
+
+  <!-- TREND -->
+  <div class="card">
+    <div class="section-title">📈 Courbe des vols</div>
+    <canvas id="trendCanvas" height="110"></canvas>
+  </div>
+
+</div>
+
+<!-- ===== PAGE: PRÉDICTION ===== -->
+<div class="page" id="page-prediction">
+
+  <div class="card">
+    <div class="section-title">🎯 Prédiction prochain vol</div>
+    <div class="pred-main">
+      <div class="pred-label">Coefficient estimé</div>
+      <div class="pred-value" id="predValue">—</div>
+      <div class="pred-confidence">
+        <div class="pred-conf-fill" id="confFill" style="width:0%"></div>
+      </div>
+      <div class="pred-conf-label">
+        <span>Confiance</span>
+        <span id="confPct">—</span>
+      </div>
+      <div class="chances-counter" id="chancesCounter" style="display:none;margin-top:10px;">
+        <div class="cc-dot cc-dot-1 active" id="cd1"></div>
+        <div class="cc-dot cc-dot-2" id="cd2"></div>
+        <div class="cc-dot cc-dot-3" id="cd3"></div>
+        <span class="cc-label" id="chanceLbl">CHANCE 1/3</span>
+      </div>
+      <div id="chanceInfo"></div>
+    </div>
+
+    <div class="signal-zone" id="signalZone">
+      <div class="signal-icon">⏳</div>
+      <div class="signal-body">
+        <div class="signal-title">Signal</div>
+        <div class="signal-text" id="signalText">Ajoutez des données pour analyser</div>
+      </div>
+    </div>
+
+    <div class="cashout-rec" id="cashoutRec">
+      <div class="cash-lbl">💰 CASHOUT OPTIMAL</div>
+      <div class="cash-val" id="cashVal">×1.50</div>
+      <div class="cash-sub" id="cashSub">Encaissez avant ce seuil</div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:2px;color:var(--muted2);margin-bottom:6px;">DERNIÈRE SÉQUENCE</div>
+      <div class="streak-row" id="streakRow">
+        <span style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);">—</span>
+      </div>
+    </div>
+
+    <div style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:2px;color:var(--muted2);margin-bottom:8px;">STRATÉGIE</div>
+    <div class="strat-pills">
+      <div class="spill active" onclick="setStrat(this,'safe')">🛡️ Safe</div>
+      <div class="spill" onclick="setStrat(this,'balanced')">⚖️ Équilibre</div>
+      <div class="spill" onclick="setStrat(this,'aggressive')">🔥 Agressif</div>
+      <div class="spill" onclick="setStrat(this,'scalp')">⚡ Scalp</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">📊 Distribution</div>
+    <div class="bar-row">
+      <div class="bar-label">×1 – 1.5</div>
+      <div class="bar-track"><div class="bar-fill" id="b1" style="width:0%;background:linear-gradient(90deg,#ff4d6d,#ff6b6b)"></div></div>
+      <div class="bar-count" id="bc1">0</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">×1.5 – 2</div>
+      <div class="bar-track"><div class="bar-fill" id="b2" style="width:0%;background:linear-gradient(90deg,#ff8c42,#ffaa42)"></div></div>
+      <div class="bar-count" id="bc2">0</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">×2 – 5</div>
+      <div class="bar-track"><div class="bar-fill" id="b3" style="width:0%;background:linear-gradient(90deg,#ffe234,#ffd000)"></div></div>
+      <div class="bar-count" id="bc3">0</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">×5 – 10</div>
+      <div class="bar-track"><div class="bar-fill" id="b4" style="width:0%;background:linear-gradient(90deg,#2dff8f,#00d4ff)"></div></div>
+      <div class="bar-count" id="bc4">0</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">×10+</div>
+      <div class="bar-track"><div class="bar-fill" id="b5" style="width:0%;background:linear-gradient(90deg,#4d9fff,#b44dff)"></div></div>
+      <div class="bar-count" id="bc5">0</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== PAGE: STATS ===== -->
+<div class="page" id="page-stats">
+  <div class="card">
+    <div class="section-title">📊 Statistiques globales</div>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-val c-blue" id="sTotal">0</span><span class="stat-lbl">Vols analysés</span></div>
+      <div class="stat-box"><span class="stat-val c-yellow" id="sMoy">—</span><span class="stat-lbl">Moyenne</span></div>
+      <div class="stat-box"><span class="stat-val c-green" id="sMax">—</span><span class="stat-lbl">Max</span></div>
+      <div class="stat-box"><span class="stat-val c-red" id="sMin">—</span><span class="stat-lbl">Min</span></div>
+      <div class="stat-box"><span class="stat-val c-blue" id="sMed">—</span><span class="stat-lbl">Médiane</span></div>
+      <div class="stat-box"><span class="stat-val c-yellow" id="sBelow2">—</span><span class="stat-lbl">% crash &lt;2x</span></div>
+    </div>
+  </div>
+  <div class="disclaimer">
+    ⚠️ Prédictions basées sur l'analyse statistique.<br>
+    Aviator utilise un RNG certifié — chaque vol est indépendant.<br>
+    <b style="color:var(--accent)">Jouez de manière responsable.</b>
+  </div>
+</div>
+
+<!-- ===== PAGE: MISE ===== -->
+<div class="page" id="page-mise">
+  <div class="card">
+    <div class="section-title">💵 Mise conseillée</div>
+    <div class="inp-group">
+      <label>Capital disponible (€ ou FCFA)</label>
+      <input type="number" id="capital" value="20" min="1" onchange="updateBetSuggestion()">
+    </div>
+    <div style="height:10px"></div>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-val c-green" id="bSafe">—</span><span class="stat-lbl">Safe (2%)</span></div>
+      <div class="stat-box"><span class="stat-val c-yellow" id="bBal">—</span><span class="stat-lbl">Équilibré (5%)</span></div>
+      <div class="stat-box"><span class="stat-val c-red" id="bAgg">—</span><span class="stat-lbl">Agressif (10%)</span></div>
+      <div class="stat-box"><span class="stat-val c-blue" id="bScalp">—</span><span class="stat-lbl">Scalp (1%)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL AIDE ===== -->
+<div class="modal-overlay hidden" id="helpOverlay" onclick="closeHelpOutside(event)">
+  <div class="modal" id="helpModal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">✈️ GUIDE</div>
+      <button class="modal-close" onclick="closeHelp()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted2);line-height:1.7;margin-bottom:16px;">AviatorBot analyse les <b style="color:var(--text)">coefficients passés</b> pour calculer des prédictions statistiques.</p>
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-title">JOUE UN ROUND</div>
+          <div class="step-desc">Lance une partie Aviator. Observe le coefficient final (ex : <b>×2.45</b>).</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-title">ENTRE LE COEFFICIENT</div>
+          <div class="step-desc">Tape-le dans le champ et clique <b>+ ADD</b>. Utilise les boutons rapides.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-title">RÉPÈTE 5 À 10 FOIS</div>
+          <div class="step-desc">Plus tu en ajoutes, plus la prédiction est précise. <b>5 min</b> pour commencer.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-title">CLIQUE 🔍 ANALYSER</div>
+          <div class="step-desc">Le bot calcule la prédiction + signal + cashout optimal selon ta stratégie.</div>
+        </div>
+      </div>
+      <div class="modal-sep"></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:3px;color:var(--accent);margin-bottom:10px;">🎯 SYSTÈME 3 CHANCES</div>
+      <p style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted2);line-height:1.6;margin-bottom:10px;">Chaque prédiction te donne <b style="color:var(--text)">3 chances</b>.</p>
+      <div class="chances-grid">
+        <div class="chance-item"><span class="chance-num c1">1ère</span><div class="chance-lbl">Mise normale<br>100%</div></div>
+        <div class="chance-item"><span class="chance-num c2">2ème</span><div class="chance-lbl">Mise ×1.5</div></div>
+        <div class="chance-item"><span class="chance-num c3">3ème</span><div class="chance-lbl">Dernière<br>×2</div></div>
+      </div>
+      <div class="modal-sep"></div>
+      <div class="legend-pills">
+        <div class="lpill lp-low">×1–1.5 · CRASH</div>
+        <div class="lpill lp-mid">×1.5–3 · COURT</div>
+        <div class="lpill lp-high">×3–10 · BON VOL</div>
+        <div class="lpill lp-moon">×10+ · 🚀 MOON</div>
+      </div>
+      <button onclick="closeHelp()" style="width:100%;margin-top:16px;padding:13px;background:var(--ag);border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:3px;color:#000;cursor:pointer;">C'EST COMPRIS</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== TELEGRAM WEBAPP INIT =====
+if (window.Telegram && window.Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+  Telegram.WebApp.setHeaderColor('#02040a');
+  Telegram.WebApp.setBackgroundColor('#02040a');
+}
+
+// ===== STATE =====
+const S = { coefs: [], strat: 'safe', animFrame: null, animRunning: false };
+const STRAT_CASHOUT = { safe: 1.5, balanced: 2.0, aggressive: 3.5, scalp: 1.2 };
+
+// ===== TABS =====
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
+  if (name === 'stats') { updateStats(); }
+  if (name === 'prediction') { renderStreak(); }
+}
+
+// ===== ADD COEF =====
+function addCoef(val) {
+  const input = document.getElementById('coefInput');
+  const v = val !== undefined ? val : parseFloat(input.value);
+  if (!v || v < 1) { if (!val) input.focus(); return; }
+  S.coefs.push(parseFloat(v.toFixed(2)));
+  input.value = '';
+  if (!val) input.focus();
+  renderTape();
+  updateStats();
+  drawTrend();
+  updateDistrib();
+  updateBetSuggestion();
+  if (S.coefs.length >= 3) analyze();
+  if (window.Telegram && window.Telegram.WebApp) Telegram.WebApp.HapticFeedback.impactOccurred('light');
+}
+function quickAdd(v) { addCoef(v); }
+
+// ===== TAPE =====
+function pillClass(v) {
+  if (v < 1.5) return 'pill-low';
+  if (v < 3)   return 'pill-mid';
+  if (v < 10)  return 'pill-high';
+  return 'pill-moon';
+}
+function renderTape() {
+  const tape = document.getElementById('histTape');
+  if (!S.coefs.length) {
+    tape.innerHTML = '<span style="font-family:\'DM Mono\',monospace;font-size:0.68rem;color:var(--muted);align-self:center;">Ajoutez les résultats passés</span>';
+    return;
+  }
+  tape.innerHTML = S.coefs.slice(-30).map((c,i) =>
+    `<span class="coef-pill ${pillClass(c)}" title="Vol #${i+1}">×${c.toFixed(2)}</span>`
+  ).join('');
+  tape.scrollLeft = tape.scrollWidth;
+}
+
+// ===== STATS =====
+function median(arr) {
+  const s = [...arr].sort((a,b)=>a-b);
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function updateStats() {
+  const c = S.coefs;
+  if (!c.length) return;
+  const avg = c.reduce((a,b)=>a+b,0)/c.length;
+  document.getElementById('sTotal').textContent = c.length;
+  document.getElementById('sMoy').textContent   = '×'+avg.toFixed(2);
+  document.getElementById('sMax').textContent   = '×'+Math.max(...c).toFixed(2);
+  document.getElementById('sMin').textContent   = '×'+Math.min(...c).toFixed(2);
+  document.getElementById('sMed').textContent   = '×'+median(c).toFixed(2);
+  document.getElementById('sBelow2').textContent= Math.round((c.filter(v=>v<2).length/c.length)*100)+'%';
+}
+
+// ===== DISTRIBUTION =====
+function updateDistrib() {
+  const c = S.coefs; if (!c.length) return;
+  const bands = [c.filter(v=>v<1.5).length, c.filter(v=>v>=1.5&&v<2).length, c.filter(v=>v>=2&&v<5).length, c.filter(v=>v>=5&&v<10).length, c.filter(v=>v>=10).length];
+  bands.forEach((cnt,i) => {
+    document.getElementById(`b${i+1}`).style.width = Math.round((cnt/c.length)*100)+'%';
+    document.getElementById(`bc${i+1}`).textContent = cnt;
+  });
+}
+
+// ===== TREND =====
+function drawTrend() {
+  const canvas = document.getElementById('trendCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth; const H = 110;
+  canvas.width = W*(window.devicePixelRatio||1);
+  canvas.height = H*(window.devicePixelRatio||1);
+  ctx.scale(window.devicePixelRatio||1, window.devicePixelRatio||1);
+  ctx.clearRect(0,0,W,H);
+  const data = S.coefs.slice(-20);
+  if (data.length < 2) return;
+  const mn = Math.min(...data)*0.9, mx = Math.max(...data)*1.1;
+  const range = mx-mn || 1;
+  const pad = {t:8,r:8,b:18,l:32};
+  const cw = W-pad.l-pad.r, ch = H-pad.t-pad.b;
+  const sx = i => pad.l+(i/(data.length-1))*cw;
+  const sy = v => pad.t+ch-((v-mn)/range)*ch;
+  ctx.strokeStyle='rgba(22,32,53,1)'; ctx.lineWidth=1;
+  [1.5,2,5].forEach(line=>{
+    if(line>=mn&&line<=mx){
+      const y=sy(line); ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+      ctx.fillStyle='rgba(90,112,144,0.6)'; ctx.font=`8px 'DM Mono'`; ctx.fillText('×'+line,2,y+3);
+    }
+  });
+  const grad=ctx.createLinearGradient(0,pad.t,0,H-pad.b);
+  grad.addColorStop(0,'rgba(255,77,109,0.2)'); grad.addColorStop(1,'rgba(255,77,109,0)');
+  ctx.beginPath();
+  data.forEach((v,i)=>i===0?ctx.moveTo(sx(i),sy(v)):ctx.lineTo(sx(i),sy(v)));
+  ctx.lineTo(sx(data.length-1),H-pad.b); ctx.lineTo(sx(0),H-pad.b); ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath();
+  data.forEach((v,i)=>i===0?ctx.moveTo(sx(i),sy(v)):ctx.lineTo(sx(i),sy(v)));
+  ctx.strokeStyle='#ff4d6d'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+  data.forEach((v,i)=>{
+    ctx.beginPath(); ctx.arc(sx(i),sy(v),3,0,Math.PI*2);
+    ctx.fillStyle=v>=2?'#2dff8f':'#ff4d6d'; ctx.fill();
+  });
+}
+
+// ===== STREAK =====
+function renderStreak() {
+  const row = document.getElementById('streakRow');
+  const last = S.coefs.slice(-12);
+  if (!last.length) { row.innerHTML='<span style="font-family:\'DM Mono\',monospace;font-size:0.68rem;color:var(--muted);">—</span>'; return; }
+  row.innerHTML = last.map(v=>`<div class="streak-dot ${v>=2?'sd-high':'sd-low'}">${v>=2?'↑':'↓'}</div>`).join('');
+}
+
+// ===== ANALYZE =====
+function detectStreak(arr) {
+  if (arr.length<2) return {type:null,count:0};
+  const last=arr[arr.length-1], type=last<2?'low':'high'; let count=0;
+  for(let i=arr.length-1;i>=0;i--){const isLow=arr[i]<2;if((type==='low'&&isLow)||(type==='high'&&!isLow))count++;else break;}
+  return {type,count};
+}
+
+function analyze() {
+  const c = S.coefs;
+  if (c.length < 3) { setSignal('⏳','Ajoutez au moins 3 coefficients',''); return; }
+  const avg = c.reduce((a,b)=>a+b,0)/c.length;
+  const med = median(c);
+  const last3avg = c.slice(-3).reduce((a,b)=>a+b,0)/3;
+  const last5 = c.slice(-5);
+  const trend = last5.length>=2 ? last5[last5.length-1]-last5[0] : 0;
+  const streak = detectStreak(c);
+  let pred = avg*0.3+med*0.25+last3avg*0.35+(avg+trend*0.1)*0.1;
+  if (streak.type==='low'&&streak.count>=2) pred=Math.min(pred*1.15,avg*2.5);
+  else if (streak.type==='high'&&streak.count>=3) pred=Math.max(pred*0.85,1.1);
+  pred = Math.max(1.05,parseFloat(pred.toFixed(2)));
+  const variance = c.reduce((s,v)=>s+Math.pow(v-avg,2),0)/c.length;
+  const cv = Math.sqrt(variance)/avg;
+  const conf = Math.max(20,Math.min(88,Math.round((1-Math.min(cv,1))*80+(c.length>=10?8:0))));
+  const cashTarget = STRAT_CASHOUT[S.strat]||2.0;
+  const co = Math.min(pred*0.75,cashTarget);
+
+  const pv = document.getElementById('predValue');
+  pv.textContent = '×'+pred.toFixed(2);
+  pv.className = 'pred-value'+(pred>=2?' green-pred':'');
+  document.getElementById('confFill').style.width = conf+'%';
+  document.getElementById('confPct').textContent = conf+'%';
+
+  if (pred<1.5) setSignal('🔴','Crash précoce probable — mise faible','danger');
+  else if (pred<2) setSignal('🟡','Vol court — cashout à ×'+cashTarget,'wait');
+  else if (pred<5) setSignal('🟢','Bon vol estimé — cashout à ×'+cashTarget,'go');
+  else setSignal('🚀','Vol long potentiel — surveille le cashout !','go');
+
+  document.getElementById('cashVal').textContent = '×'+co.toFixed(2);
+  document.getElementById('cashSub').textContent = `Prédiction ×${pred.toFixed(2)} — sécurisez tôt`;
+  document.getElementById('cashoutRec').classList.add('show');
+  document.getElementById('predTag').textContent = '🎯 Prédit: ×'+pred.toFixed(2);
+
+  renderStreak();
+  animatePlane(pred);
+  updateBetSuggestion();
+
+  // Système 3 chances
+  CHANCES.current = 1;
+  CHANCES.pred = pred;
+  updateChancesDisplay();
+
+  if (window.Telegram && window.Telegram.WebApp) Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+}
+
+function setSignal(icon,text,cls) {
+  document.querySelector('#signalZone .signal-icon').textContent = icon;
+  const el = document.getElementById('signalText');
+  el.textContent = text;
+  el.className = 'signal-text'+(cls?' '+cls:'');
+}
+
+// ===== PLANE ANIMATION =====
+function animatePlane(targetMult) {
+  if (S.animRunning) return;
+  S.animRunning = true;
+  const plane=document.getElementById('plane'), line=document.getElementById('trajLine'), disp=document.getElementById('multDisplay');
+  const zone=document.getElementById('planeZone'), H=zone.offsetHeight;
+  let t=0; const dur=100;
+  if (S.animFrame) cancelAnimationFrame(S.animFrame);
+  function step() {
+    if(t>dur){S.animRunning=false;return;}
+    const p=t/dur, eased=1-Math.pow(1-p,2), curMult=1+(targetMult-1)*eased;
+    const leftPct=5+80*eased, botPx=18+(H-50-18)*eased;
+    plane.style.left=leftPct+'%'; plane.style.bottom=botPx+'px';
+    line.style.width=leftPct+'%'; disp.textContent='×'+curMult.toFixed(2);
+    t++; S.animFrame=requestAnimationFrame(step);
+  }
+  step();
+}
+
+// ===== STRAT =====
+function setStrat(el,strat) {
+  document.querySelectorAll('.spill').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active'); S.strat=strat;
+  if(S.coefs.length>=3) analyze();
+}
+
+// ===== BET SUGGESTION =====
+function updateBetSuggestion() {
+  const cap=parseFloat(document.getElementById('capital').value)||20;
+  document.getElementById('bSafe').textContent=(cap*0.02).toFixed(2);
+  document.getElementById('bBal').textContent=(cap*0.05).toFixed(2);
+  document.getElementById('bAgg').textContent=(cap*0.10).toFixed(2);
+  document.getElementById('bScalp').textContent=(cap*0.01).toFixed(2);
+}
+
+// ===== CLEAR =====
+function clearAll() {
+  S.coefs=[]; S.animRunning=false;
+  if(S.animFrame) cancelAnimationFrame(S.animFrame);
+  renderTape(); updateStats(); drawTrend(); updateDistrib(); renderStreak();
+  document.getElementById('predValue').textContent='—';
+  document.getElementById('confFill').style.width='0%';
+  document.getElementById('confPct').textContent='—';
+  document.getElementById('multDisplay').textContent='×1.00';
+  document.getElementById('plane').style.left='5%';
+  document.getElementById('plane').style.bottom='18px';
+  document.getElementById('trajLine').style.width='0%';
+  document.getElementById('predTag').textContent='⏳ En attente';
+  document.getElementById('cashoutRec').classList.remove('show');
+  CHANCES.current=0; updateChancesDisplay();
+  setSignal('⏳','Ajoutez des données pour analyser','');
+  if(window.Telegram&&window.Telegram.WebApp) Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+}
+
+// ===== CHANCES =====
+const CHANCES = {current:0,max:3,pred:null};
+const CHANCE_MSGS = [
+  null,
+  {lbl:'CHANCE 1/3',info:'💚 Mise normale (100%). Cache au coefficient prédit.'},
+  {lbl:'CHANCE 2/3',info:'🟡 Mise ×1.5. Le signal tient — rejoue avec la même prédiction.'},
+  {lbl:'CHANCE 3/3',info:'🔴 Dernière chance — Mise ×2. Après ce round, entre le nouveau coef.'},
+];
+function updateChancesDisplay() {
+  const counter=document.getElementById('chancesCounter'), info=document.getElementById('chanceInfo');
+  if(CHANCES.current===0){counter.style.display='none';info.style.display='none';return;}
+  counter.style.display='flex'; info.style.display='block';
+  const msg=CHANCE_MSGS[CHANCES.current];
+  document.getElementById('chanceLbl').textContent=msg.lbl;
+  info.textContent=msg.info;
+  const colors=['','var(--green)','var(--yellow)','var(--accent)'];
+  document.getElementById('chanceLbl').style.color=colors[CHANCES.current];
+  for(let i=1;i<=3;i++){
+    const dot=document.getElementById('cd'+i);
+    dot.classList.remove('active','used');
+    if(i<CHANCES.current) dot.classList.add('used');
+    else if(i===CHANCES.current) dot.classList.add('active');
+  }
+}
+function nextChance() {
+  if(CHANCES.current<CHANCES.max){CHANCES.current++;updateChancesDisplay();}
+  else{CHANCES.current=0;updateChancesDisplay();setSignal('🔄','3 chances utilisées — entrez le nouveau coefficient','');}
+  if(window.Telegram&&window.Telegram.WebApp) Telegram.WebApp.HapticFeedback.impactOccurred('light');
+}
+
+// ===== MODAL =====
+function openHelp() { document.getElementById('helpOverlay').classList.remove('hidden'); document.body.style.overflow='hidden'; }
+function closeHelp() { document.getElementById('helpOverlay').classList.add('hidden'); document.body.style.overflow=''; }
+function closeHelpOutside(e) { if(e.target===document.getElementById('helpOverlay')) closeHelp(); }
+document.addEventListener('keydown',e=>{if(e.key==='Escape') closeHelp();});
+
+// BOOT
+updateBetSuggestion();
+drawTrend();
+window.addEventListener('resize',drawTrend);
+setTimeout(()=>openHelp(),500);
+</script>
+</body>
+</html>
